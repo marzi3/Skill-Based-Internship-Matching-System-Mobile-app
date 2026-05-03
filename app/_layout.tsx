@@ -1,7 +1,7 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
-import { Stack, useSegments, useRouter } from 'expo-router';
+import { Stack, useSegments, useRouter, useRootNavigationState } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import 'react-native-reanimated';
@@ -9,7 +9,7 @@ import '../global.css';
 
 
 import { useColorScheme } from '@/components/useColorScheme';
-import { AuthProvider } from '../src/context/AuthContext';
+import { AuthProvider, useAuth } from '../src/context/AuthContext';
 
 
 export {
@@ -30,10 +30,12 @@ function RootLayoutNav() {
   const { user, loading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
+  const navigationState = useRootNavigationState();
   const colorScheme = useColorScheme();
 
   useEffect(() => {
     if (loading) return;
+    if (!navigationState?.key) return; // Wait until navigation is fully ready
 
     const inAuthGroup = segments[0] === '(auth)';
 
@@ -44,7 +46,7 @@ function RootLayoutNav() {
       // Redirect away from the sign-in page if the user is authenticated
       router.replace('/(tabs)');
     }
-  }, [user, segments, loading]);
+  }, [user, segments, loading, navigationState?.key]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

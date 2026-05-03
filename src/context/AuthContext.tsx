@@ -33,12 +33,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const getRoleDashboard = (role: string): string => {
-    switch (role) {
-        case 'employer': return '/(employer)/dashboard';
-        case 'admin': return '/(admin)/dashboard';
-        case 'student':
-        default: return '/(tabs)/';
-    }
+    return '/(tabs)/';
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -109,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             setUser(data);
             await syncUserToStorage(data);
-            router.replace('/(auth)/verify');
+            router.replace('/(tabs)/');
             return { success: true };
         } catch (error: any) {
             return { success: false, error: error.response?.data?.message || 'Registration failed' };

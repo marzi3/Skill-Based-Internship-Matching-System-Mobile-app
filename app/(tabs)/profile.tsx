@@ -41,8 +41,12 @@ export default function ProfileScreen() {
   };
 
   useEffect(() => {
-    fetchProfile();
-  }, []);
+    if (user && user.role === 'student') {
+      fetchProfile();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   const onRefresh = () => {
     setRefreshing(true);
