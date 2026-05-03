@@ -19,7 +19,7 @@ import { useAuth } from '../../src/context/AuthContext';
 import apiClient from '../../src/api/apiClient';
 import { Badge } from '../../src/components/Badge';
 import { LinearGradient } from 'expo-linear-gradient';
-
+import { router } from 'expo-router';
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const [profile, setProfile] = useState<any>(null);

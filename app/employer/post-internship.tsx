@@ -22,7 +22,7 @@ import { Stepper } from '../../src/components/Stepper';
 import apiClient from '../../src/api/apiClient';
 import { Input } from '../../src/components/Input';
 import { Button } from '../../src/components/Button';
-import { MotiView } from 'moti';
+import { MotiView, AnimatePresence } from 'moti';
 
 const internshipSchema = z.object({
   positionTitle: z.string().min(1, 'Position title is required'),
