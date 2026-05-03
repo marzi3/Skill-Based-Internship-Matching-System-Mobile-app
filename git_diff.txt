@@ -1,0 +1,40 @@
+diff --git a/backend/src/controllers/internshipController.js b/backend/src/controllers/internshipController.js
+index 1705087..62ef613 100644
+--- a/backend/src/controllers/internshipController.js
++++ b/backend/src/controllers/internshipController.js
+@@ -1,6 +1,7 @@
+ const logger = require('../utils/logger');
+ const Internship = require('../models/Internship');
+ const User = require('../models/User');
++const Student = require('../models/Student');
+ 
+ // @desc    Get all hiring internships (for students)
+ // @route   GET /api/internships
+@@ -174,7 +175,7 @@ exports.createInternship = async (req, res) => {
+ 
+         // Add employer to req.body
+         req.body.employer = req.user.id;
+-        req.body.company = user.companyName || 'Incubator Labs';
++        req.body.company = user.companyName || 'My Company';
+ 
+         // Rule: Only APPROVED employers can publish. PENDING can only DRAFT.
+         const activeStatuses = ['Active', 'Hiring', 'Reviewing'];
+@@ -318,7 +319,7 @@ exports.getMyInternships = async (req, res) => {
+ exports.getSkillDemands = async (req, res) => {
+     try {
+         const skillDemands = await Internship.aggregate([
+-            { $match: { requiredSkills: { $exists: true, $not: { $size: 0 } } } },
++            { $match: { employer: new mongoose.Types.ObjectId(req.user.id), requiredSkills: { $exists: true, $not: { $size: 0 } } } },
+             { $unwind: '$requiredSkills' },
+             {
+                 $project: {
+@@ -348,8 +349,7 @@ exports.getSkillDemands = async (req, res) => {
+ 
+             // Find available students that have this skill (case-insensitive fuzzy match)
+             // The student.skills array might contain strings or objects with a 'name' field
+-            const available = await User.countDocuments({
+-                role: 'student',
++            const available = await Student.countDocuments({
+                 $or: [
+                     { skills: new RegExp(skillName, 'i') },
+                     { 'skills.name': new RegExp(skillName, 'i') }
