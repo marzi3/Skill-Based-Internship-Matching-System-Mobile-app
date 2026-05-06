@@ -52,7 +52,9 @@ app.use(cors({
       origin.startsWith('http://localhost:3002') ||
       origin.startsWith('http://localhost:3003') ||
       origin.startsWith('http://localhost:3004') ||
-      origin.startsWith('http://localhost:3005')
+      origin.startsWith('http://localhost:3005') ||
+      origin.startsWith('http://localhost:8081') ||
+      origin.startsWith('http://127.0.0.1:8081')
     );
 
     if (!origin || isLocalhost || origin === process.env.FRONTEND_URL) {
