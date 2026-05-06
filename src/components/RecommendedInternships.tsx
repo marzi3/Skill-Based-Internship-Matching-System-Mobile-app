@@ -1,14 +1,14 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, Image } from 'react-native';
-import { Star, ChevronRight } from 'lucide-react-native';
-import { MotiView } from 'moti';
 import { router } from 'expo-router';
+import { ChevronRight, Star } from 'lucide-react-native';
+import { MotiView } from 'moti';
+import React from 'react';
+import { Image, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
 interface Match {
   internship: {
     _id: string;
     positionTitle: string;
-    requiredSkills: string[];
+    requiredSkills: Array<string | { name?: string; mandatory?: boolean; prefersSenior?: boolean }>;
     employer?: {
       companyName: string;
       profilePicture?: string;
@@ -16,6 +16,9 @@ interface Match {
     company?: string;
   };
   score: number;
+  reasons?: string[];
+  explanationData?: Array<{ rule?: string; score?: number | string; detail?: string }>;
+  tier?: string;
 }
 
 interface Props {
@@ -76,13 +79,55 @@ export const RecommendedInternships: React.FC<Props> = ({ matches = [] }) => {
             </Text>
           </View>
 
-          <View className="flex-row flex-wrap gap-2 mb-8">
+          <View className="flex-row flex-wrap gap-2 mb-4">
+            {/* Show up to two required skills as badges (safe render) */}
             {(match.internship.requiredSkills || []).slice(0, 2).map((skill, i) => (
               <View key={i} className="bg-gray-50 px-3 py-1.5 rounded-xl border border-gray-100">
-                <Text className="text-[10px] text-gray-500 font-black uppercase tracking-widest">{skill}</Text>
+                <Text className="text-[10px] text-gray-500 font-black uppercase tracking-widest">
+                  {typeof skill === 'string' ? skill : skill?.name || 'Skill'}
+                </Text>
               </View>
             ))}
           </View>
+
+          {/* Match analysis: render matched vs missing skills when provided by API */}
+          {((match.explanationData && match.explanationData.length) || (match.reasons && match.reasons.length)) && (
+            <View className="mb-4">
+              <View className="flex-row items-center mb-2">
+                <Text className="text-[11px] font-black text-gray-700 mr-2">Match Details:</Text>
+                <Text className="text-[10px] text-gray-400">{match.tier || ''}</Text>
+              </View>
+              <View className="flex-row flex-wrap gap-2">
+                {/* Extract exact matched skills from explanationData details */}
+                {((match.explanationData || [])
+                  .filter(e => e?.detail && /exact skill match/i.test(String(e.detail)))
+                  .map(e => {
+                    const m = String(e.detail).match(/: ?(.+)$/);
+                    return m ? m[1] : String(e.detail);
+                  })
+                  .slice(0, 3)
+                ).map((s, i) => (
+                  <View key={`m-${i}`} className="bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
+                    <Text className="text-[10px] text-emerald-700 font-black uppercase tracking-widest">{s}</Text>
+                  </View>
+                ))}
+
+                {/* Extract missing or mandatory failures */}
+                {((match.explanationData || [])
+                  .filter(e => e?.detail && (/missing|mandatory|not met/i.test(String(e.detail))))
+                  .map(e => {
+                    const m = String(e.detail).match(/: ?(.+)$/);
+                    return m ? m[1] : String(e.detail);
+                  })
+                  .slice(0, 3)
+                ).map((s, i) => (
+                  <View key={`x-${i}`} className="bg-rose-50 px-3 py-1.5 rounded-xl border border-rose-100">
+                    <Text className="text-[10px] text-rose-700 font-black uppercase tracking-widest">{s}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
 
           <TouchableOpacity 
             onPress={() => router.push(`/internships/${match.internship._id}` as any)}

@@ -1,37 +1,60 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, RefreshControl } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { 
-  User, 
-  MapPin, 
-  GraduationCap, 
-  Code, 
-  Settings, 
-  LogOut, 
-  CheckCircle, 
-  Award, 
-  ExternalLink,
-  ChevronRight,
-  Briefcase
-} from 'lucide-react-native';
-import { MotiView } from 'moti';
-import { useAuth } from '../../src/context/AuthContext';
-import apiClient from '../../src/api/apiClient';
-import { Badge } from '../../src/components/Badge';
-import { LinearGradient } from 'expo-linear-gradient';
+import { useIsFocused } from '@react-navigation/native';
 import { router } from 'expo-router';
+import { BookMarked, Briefcase, ChevronRight, Edit2, LogOut, Settings } from 'lucide-react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import apiClient from '../../src/api/apiClient';
+import { AdminProfile } from '../../src/components/AdminProfile';
+import {
+  CertificationsSection,
+  EducationSection,
+  PersonalInfoSection,
+  PortfolioSection,
+  ProfileCompletion,
+  ProfileHeader,
+  ProjectsSection,
+  SkillsSection,
+} from '../../src/components/student';
+import { useAuth } from '../../src/context/AuthContext';
+
+function ActionRow({ icon: Icon, label, onPress, color = '#4F46E5', bg = 'bg-indigo-50' }: any) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      className="bg-white p-5 rounded-2xl border border-gray-100 flex-row items-center justify-between mb-3"
+    >
+      <View className="flex-row items-center">
+        <View className={`w-9 h-9 ${bg} rounded-xl items-center justify-center`}>
+          <Icon size={18} color={color} />
+        </View>
+        <ActionLabel label={label} />
+      </View>
+      <ChevronRight size={16} color="#D1D5DB" />
+    </TouchableOpacity>
+  );
+}
+
+function ActionLabel({ label }: { label: string }) {
+  return <Text className="text-gray-900 font-black uppercase text-base ml-4">{label}</Text>;
+}
+
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
-  const [profile, setProfile] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [profile, setProfile]   = useState<any>(null);
+  const [loading, setLoading]   = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (user?.role === 'employer') {
+      router.replace('/employer/profile' as any);
+    }
+  }, [user]);
 
   const fetchProfile = async () => {
     try {
       const res = await apiClient.get('students/profile');
-      if (res.data.success) {
-        setProfile(res.data.data);
-      }
+      if (res.data.success) setProfile(res.data.data);
     } catch (err) {
       console.error('Fetch profile error:', err);
     } finally {
@@ -41,17 +64,20 @@ export default function ProfileScreen() {
   };
 
   useEffect(() => {
-    if (user && user.role === 'student') {
-      fetchProfile();
-    } else {
-      setLoading(false);
-    }
+    if (user?.role !== 'student') { setLoading(false); return; }
+    // initial load
+    if (!profile) fetchProfile();
   }, [user]);
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchProfile();
-  };
+  // Refresh profile when this screen regains focus (e.g., after editing education)
+  useEffect(() => {
+    if (isFocused && user?.role === 'student') {
+      setRefreshing(true);
+      fetchProfile();
+    }
+  }, [isFocused, user]);
+
+  const onRefresh = useCallback(() => { setRefreshing(true); fetchProfile(); }, []);
 
   if (loading && !refreshing) {
     return (
@@ -61,121 +87,75 @@ export default function ProfileScreen() {
     );
   }
 
+  if (user?.role === 'employer') {
+    return (
+      <View className="flex-1 bg-white items-center justify-center">
+        <ActivityIndicator size="large" color="#4F46E5" />
+      </View>
+    );
+  }
+
+  if (user?.role === 'admin') {
+    return <AdminProfile />;
+  }
+
   return (
     <View className="flex-1 bg-white">
-      <ScrollView 
+      <ScrollView
         className="flex-1"
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        showsVerticalScrollIndicator={false}
       >
-        {/* Profile Header */}
-        <View className="h-64 relative">
-          <LinearGradient
-            colors={['#4F46E5', '#9333EA']}
-            className="h-48 w-full"
-          />
-          <View className="absolute bottom-0 left-6 flex-row items-end">
-            <View className="w-32 h-32 rounded-3xl bg-white p-1 shadow-xl border border-gray-100">
-               <View className="w-full h-full rounded-2xl bg-indigo-50 items-center justify-center overflow-hidden">
-                 {user?.profilePicture ? (
-                   <Image source={{ uri: user.profilePicture }} className="w-full h-full" />
-                 ) : (
-                   <User size={48} color="#4F46E5" />
-                 )}
-               </View>
-            </View>
-            <View className="ml-4 mb-2">
-              <Text className="text-2xl font-black text-gray-900 tracking-tight">
-                {user?.name}
-              </Text>
-              <View className="flex-row items-center">
-                <Badge variant="primary" size="sm">{user?.role}</Badge>
-                {profile?.personalInfo?.location && (
-                  <View className="flex-row items-center ml-2">
-                    <MapPin size={10} color="#6B7280" />
-                    <Text className="text-gray-500 text-[10px] font-bold uppercase tracking-widest ml-1">
-                      {profile.personalInfo.location}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          </View>
-          <TouchableOpacity 
-            onPress={() => router.push('/settings' as any)}
-            className="absolute top-12 right-6 p-2 bg-white/20 rounded-full backdrop-blur-md"
-          >
-            <Settings size={20} color="white" />
-          </TouchableOpacity>
-        </View>
+        {/* Header */}
+        <ProfileHeader
+          user={user}
+          personalInfo={profile?.personalInfo}
+          profileImage={profile?.profileImage}
+          coverImage={profile?.coverImage}
+          onEditProfilePhoto={() => router.push('/student/personal?image=profile' as any)}
+          onEditCoverPhoto={() => router.push('/student/personal?image=cover' as any)}
+          onBellPress={() => router.push('/notifications' as any)}
+          onSettingsPress={() => router.push('/settings' as any)}
+        />
 
-        <View className="px-6 py-8">
-          {/* About Section */}
-          <View className="mb-10">
-            <Text className="text-lg font-black text-gray-900 uppercase tracking-tight mb-4">About Me</Text>
-            <Text className="text-gray-600 leading-6 font-medium">
-              {profile?.personalInfo?.about || "No bio added yet. Tell employers about your skills and interests."}
-            </Text>
-          </View>
+        <View className="px-6 py-6">
 
-          {/* Skills Section */}
-          <View className="mb-10">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-lg font-black text-gray-900 uppercase tracking-tight">Verified Skills</Text>
-              <Code size={20} color="#4F46E5" />
-            </View>
-            <View className="flex-row flex-wrap gap-2">
-              {profile?.skills?.length > 0 ? (
-                profile.skills.map((skill: any, i: number) => (
-                  <View key={i} className="bg-emerald-50 px-4 py-2 rounded-2xl border border-emerald-100 flex-row items-center">
-                    <CheckCircle size={14} color="#10B981" className="mr-2" />
-                    <Text className="text-emerald-700 font-bold text-xs">{typeof skill === 'string' ? skill : skill.name}</Text>
-                  </View>
-                ))
-              ) : (
-                <Text className="text-gray-400 italic">No skills added yet.</Text>
-              )}
-            </View>
-          </View>
+          {/* Profile Completion */}
+          {profile?.profileCompletion && (
+            <ProfileCompletion completion={profile.profileCompletion} />
+          )}
 
-          {/* Education Section */}
-          <View className="mb-10">
-            <View className="flex-row justify-between items-center mb-4">
-              <Text className="text-lg font-black text-gray-900 uppercase tracking-tight">Education</Text>
-              <GraduationCap size={20} color="#4F46E5" />
-            </View>
-            {profile?.education?.length > 0 ? (
-              profile.education.map((edu: any, i: number) => (
-                <View key={i} className="bg-gray-50 p-5 rounded-3xl border border-gray-100 mb-4">
-                  <Text className="text-gray-900 font-black text-base tracking-tight mb-1">{edu.institution}</Text>
-                  <Text className="text-indigo-600 font-bold text-xs uppercase tracking-widest">{edu.degree}</Text>
-                  <Text className="text-gray-500 text-[10px] font-bold mt-2 uppercase tracking-widest">
-                    {new Date(edu.startDate).getFullYear()} - {edu.endDate ? new Date(edu.endDate).getFullYear() : 'Present'}
-                  </Text>
-                </View>
-              ))
-            ) : (
-              <View className="bg-gray-50 p-6 rounded-3xl border border-dashed border-gray-200 items-center">
-                <Text className="text-gray-400 font-medium">No education details added.</Text>
-              </View>
-            )}
-          </View>
+          {/* Personal Info */}
+          <PersonalInfoSection info={profile?.personalInfo} user={user} />
 
-          {/* Actions */}
-          <View className="pt-6 border-t border-gray-100 space-y-4">
-            <TouchableOpacity className="bg-white p-5 rounded-2xl border border-gray-100 flex-row items-center justify-between">
-               <View className="flex-row items-center">
-                 <Briefcase size={20} color="#6B7280" />
-                 <Text className="text-gray-700 font-bold ml-4 uppercase tracking-widest text-xs">My Applications</Text>
-               </View>
-               <ChevronRight size={16} color="#D1D5DB" />
-            </TouchableOpacity>
+          {/* Skills */}
+          <SkillsSection skills={profile?.skills || []} />
 
-            <TouchableOpacity 
+          {/* Education */}
+          <EducationSection education={profile?.education || []} />
+
+          {/* Certifications */}
+          <CertificationsSection certifications={profile?.certifications || []} />
+
+          {/* Projects */}
+          <ProjectsSection projects={profile?.projects || []} />
+
+          {/* Portfolio */}
+          <PortfolioSection portfolio={profile?.portfolio} />
+
+          {/* Quick Actions */}
+          <View className="pt-4 border-t border-gray-50 mt-2">
+            <ActionRow icon={Briefcase}  label="My Applications"   onPress={() => router.push('/(tabs)/applications' as any)} color="#4F46E5" bg="bg-indigo-50" />
+            <ActionRow icon={Edit2}      label="Edit Profile"      onPress={() => router.push('/profile/edit' as any)}          color="#9333EA" bg="bg-purple-50" />
+            <ActionRow icon={BookMarked} label="Saved Internships" onPress={() => router.push('/profile/bookmarks' as any)}     color="#F59E0B" bg="bg-amber-50" />
+            <ActionRow icon={Settings}   label="Settings"          onPress={() => router.push('/settings' as any)}              color="#6B7280" bg="bg-gray-50" />
+
+            <TouchableOpacity
               onPress={logout}
-              className="bg-red-50 p-5 rounded-2xl border border-red-100 flex-row items-center"
+              className="bg-red-50 p-5 rounded-2xl border border-red-100 flex-row items-center mt-1"
             >
-               <LogOut size={20} color="#EF4444" />
-               <Text className="text-red-600 font-bold ml-4 uppercase tracking-widest text-xs">Logout</Text>
+              <LogOut size={20} color="#EF4444" />
+              <ActionLabel label="Logout" />
             </TouchableOpacity>
           </View>
         </View>

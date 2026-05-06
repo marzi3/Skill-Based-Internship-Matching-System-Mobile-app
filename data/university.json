@@ -1,0 +1,25 @@
+{
+  "Sri Lanka": [
+    { "name": "University of Moratuwa", "aliases": ["UoM", "Moratuwa University"] },
+    { "name": "University of Colombo", "aliases": ["UoC", "Colombo University"] },
+    { "name": "Sri Lanka Institute of Information Technology", "aliases": ["SLIIT"] },
+    { "name": "Informatics Institute of Technology", "aliases": ["IIT"] },
+    { "name": "General Sir John Kotelawala Defence University", "aliases": ["KDU"] },
+    { "name": "NSBM Green University", "aliases": ["NSBM"] },
+    { "name": "University of Kelaniya", "aliases": ["UoK"] },
+    { "name": "University of Peradeniya", "aliases": ["UoP"] },
+    { "name": "University of Sri Jayewardenepura", "aliases": ["USJ", "Jayewardenepura University"] },
+    { "name": "University of Jaffna", "aliases": ["UoJ", "Jaffna University"] },
+    { "name": "University of Ruhuna", "aliases": ["UoR", "Ruhuna University"] },
+    { "name": "The Open University of Sri Lanka", "aliases": ["OUSL", "Open University"] },
+    { "name": "Eastern University, Sri Lanka", "aliases": ["EUSL", "Eastern University"] },
+    { "name": "South Eastern University of Sri Lanka", "aliases": ["SEUSL", "South Eastern University"] },
+    { "name": "Rajarata University of Sri Lanka", "aliases": ["RUSL", "Rajarata University"] },
+    { "name": "Sabaragamuwa University of Sri Lanka", "aliases": ["SUSL", "Sabaragamuwa University"] },
+    { "name": "Wayamba University of Sri Lanka", "aliases": ["WUSL", "Wayamba University"] },
+    { "name": "Uva Wellassa University of Sri Lanka", "aliases": ["UWU", "Uva Wellassa University"] },
+    { "name": "University of the Visual & Performing Arts", "aliases": ["UVPA", "Visual and Performing Arts University"] },
+    { "name": "Gampaha Wickramarachchi University of Indigenous Medicine", "aliases": ["GWUIM", "Wickramarachchi University"] },
+    { "name": "University of Vavuniya", "aliases": ["UoV", "Vavuniya University"] }
+  ]
+}

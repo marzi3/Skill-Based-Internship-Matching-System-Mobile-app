@@ -1,24 +1,26 @@
-import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Switch } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { 
-  Bell, 
-  Lock, 
-  User, 
-  ChevronRight, 
-  ShieldCheck, 
-  HelpCircle, 
-  ChevronLeft,
-  Smartphone,
-  Eye
-} from 'lucide-react-native';
 import { router } from 'expo-router';
+import {
+  Bell,
+  ChevronLeft,
+  ChevronRight,
+  Eye,
+  HelpCircle,
+  Lock,
+  ShieldCheck,
+  Smartphone,
+  User
+} from 'lucide-react-native';
 import { MotiView } from 'moti';
+import React from 'react';
+import { ScrollView, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../src/context/AuthContext';
 
-const SettingItem = ({ icon: Icon, title, value, hasSwitch, type = 'default' }: any) => (
+const SettingItem = ({ icon: Icon, title, value, hasSwitch, type = 'default', onPress }: any) => (
   <TouchableOpacity 
     className="flex-row items-center justify-between py-4 border-b border-gray-50"
-    disabled={hasSwitch}
+    onPress={onPress}
+    disabled={hasSwitch || !onPress}
   >
     <View className="flex-row items-center">
       <View className={`p-2 rounded-xl ${type === 'danger' ? 'bg-red-50' : 'bg-gray-50'}`}>
@@ -42,6 +44,16 @@ const SettingItem = ({ icon: Icon, title, value, hasSwitch, type = 'default' }: 
 );
 
 export default function SettingsScreen() {
+  const { user } = useAuth();
+
+  const handleEditProfile = () => {
+    if (user?.role === 'employer') {
+      router.push('/employer/edit-profile' as any);
+      return;
+    }
+    router.push('/profile/edit' as any);
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="px-6 py-4 flex-row items-center">
@@ -53,13 +65,13 @@ export default function SettingsScreen() {
 
       <ScrollView className="flex-1 px-6">
         <MotiView
-          from={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          from={{ opacity: 0, transform: [{ translateY: 20 }] }}
+          animate={{ opacity: 1, transform: [{ translateY: 0 }] }}
           className="mt-6"
         >
           <Text className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Account</Text>
           <View className="bg-white rounded-3xl overflow-hidden">
-            <SettingItem icon={User} title="Edit Profile" />
+            <SettingItem icon={User} title="Edit Profile" onPress={handleEditProfile} />
             <SettingItem icon={Lock} title="Change Password" />
             <SettingItem icon={ShieldCheck} title="Two-Factor Auth" value="Enabled" />
           </View>

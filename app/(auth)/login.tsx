@@ -32,7 +32,12 @@ export default function LoginScreen() {
     try {
       const result = await login(data.email, data.password);
       if (!result.success) {
-        setServerError(result.error || 'Login failed');
+        const normalizedEmail = String(data.email || '').trim().toLowerCase();
+        setServerError(
+          result.error === 'Invalid email or password'
+            ? `Invalid email or password for ${normalizedEmail}. Please check the password or reset this account in the backend.`
+            : result.error || 'Login failed'
+        );
       }
     } catch (err) {
       setServerError('An unexpected error occurred');
@@ -54,8 +59,8 @@ export default function LoginScreen() {
             className="h-64 px-8 justify-center"
           >
             <MotiView
-              from={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+              from={{ opacity: 0, translateX: -20 }}
+              animate={{ opacity: 1, translateX: 0 }}
               transition={{ delay: 200 }}
             >
               <Text className="text-4xl font-bold text-white tracking-tight">

@@ -1,17 +1,19 @@
 import axios, { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
-import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
+import { Platform } from 'react-native';
+import { storage } from '../utils/storage';
 
-// Create an Axios instance
 const getApiBaseUrl = (): string => {
-    // Replace with your actual backend URL. 
-    // Use your machine's local IP if testing on a physical device.
-    const rawBase = (process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000').replace(/\/$/, '');
+    // On web, requests go through cors-proxy.js (port 5001) to avoid CORS restrictions.
+    // On native, connect directly to the backend (port 5000).
+    const defaultUrl = Platform.OS === 'web' ? 'http://localhost:5001' : 'http://localhost:5000';
+    const rawBase = (process.env.EXPO_PUBLIC_API_URL || defaultUrl).replace(/\/$/, '');
     return rawBase.endsWith('/api/v1') ? rawBase : `${rawBase}/api/v1`;
 };
 
 const apiClient = axios.create({
     baseURL: `${getApiBaseUrl()}/`,
+    timeout: 10000, // 10s timeout to help distinguish slow responses from immediate network failures
 });
 
 // Request Interceptor: Attach Token from SecureStore
@@ -22,7 +24,7 @@ apiClient.interceptors.request.use(
             config.url = config.url.substring(1);
         }
 
-        const token = await SecureStore.getItemAsync('token');
+        const token = await storage.getItem('token');
         if (token) {
             config.headers.set('Authorization', `Bearer ${token}`);
         }
@@ -40,8 +42,8 @@ apiClient.interceptors.response.use(
     },
     async (error: AxiosError) => {
         if (error.response && error.response.status === 401) {
-            await SecureStore.deleteItemAsync('token');
-            await SecureStore.deleteItemAsync('user');
+            await storage.deleteItem('token');
+            await storage.deleteItem('user');
             
             // Redirect to login using expo-router
             router.replace('/(auth)/login');

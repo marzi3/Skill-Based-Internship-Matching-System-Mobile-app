@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, TextInputProps } from 'react-native';
 import { LucideIcon, Eye, EyeOff } from 'lucide-react-native';
+import { Controller } from 'react-hook-form';
 
 interface InputProps extends TextInputProps {
   label?: string;
   icon?: LucideIcon;
   error?: string;
   secureTextEntry?: boolean;
+  control?: any;
+  name?: string;
 }
 
 export const Input: React.FC<InputProps> = ({ 
@@ -14,10 +17,24 @@ export const Input: React.FC<InputProps> = ({
   icon: Icon, 
   error, 
   secureTextEntry, 
+  control,
+  name,
   ...props 
 }) => {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = secureTextEntry;
+
+  const renderInput = (fieldProps: TextInputProps = {}) => (
+    <TextInput
+      secureTextEntry={isPassword && !showPassword}
+      placeholderTextColor="#9CA3AF"
+      className={`w-full ${Icon ? 'pl-10' : 'px-4'} ${isPassword ? 'pr-10' : 'pr-4'} py-3 bg-white border rounded-xl focus:border-indigo-500 text-gray-900 ${
+        error ? 'border-red-500' : 'border-gray-200'
+      }`}
+      {...props}
+      {...fieldProps}
+    />
+  );
 
   return (
     <View className="space-y-1 mb-4">
@@ -32,14 +49,21 @@ export const Input: React.FC<InputProps> = ({
             <Icon size={18} color={error ? '#EF4444' : '#6B7280'} />
           </View>
         )}
-        <TextInput
-          secureTextEntry={isPassword && !showPassword}
-          placeholderTextColor="#9CA3AF"
-          className={`w-full ${Icon ? 'pl-10' : 'px-4'} ${isPassword ? 'pr-10' : 'pr-4'} py-3 bg-white border rounded-xl focus:border-indigo-500 text-gray-900 ${
-            error ? 'border-red-500' : 'border-gray-200'
-          }`}
-          {...props}
-        />
+        {control && name ? (
+          <Controller
+            control={control}
+            name={name}
+            render={({ field: { onChange, onBlur, value } }) =>
+              renderInput({
+                onBlur,
+                onChangeText: onChange,
+                value: value === undefined || value === null ? '' : String(value),
+              })
+            }
+          />
+        ) : (
+          renderInput()
+        )}
         {isPassword && (
           <TouchableOpacity 
             onPress={() => setShowPassword(!showPassword)}

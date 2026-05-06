@@ -1,25 +1,24 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, Image } from 'react-native';
-import { 
-  Users, 
-  Briefcase, 
-  CheckCircle2, 
-  Calendar, 
-  TrendingUp, 
-  Plus, 
-  ChevronRight,
+import { router } from 'expo-router';
+import {
+  Activity,
   Bell,
-  Sunrise,
-  Sun,
+  Briefcase,
+  Calendar,
+  CheckCircle2,
+  ChevronRight,
   Moon,
-  Activity
+  Plus,
+  Sun,
+  Sunrise,
+  Users
 } from 'lucide-react-native';
 import { MotiView } from 'moti';
+import React, { useEffect, useState } from 'react';
+import { Alert, Platform, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import apiClient from '../api/apiClient';
-import { StatsCard } from './StatsCard';
 import { useAuth } from '../context/AuthContext';
 import { Badge } from './Badge';
-import { router } from 'expo-router';
+import { StatsCard } from './StatsCard';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
@@ -32,7 +31,8 @@ export const EmployerDashboard = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [postings, setPostings] = useState([]);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [postings, setPostings] = useState<any[]>([]);
   const [stats, setStats] = useState({
     internships: 0,
     applicants: 0,
@@ -42,6 +42,7 @@ export const EmployerDashboard = () => {
 
   const greeting = getGreeting();
   const GreetingIcon = greeting.icon;
+  const isWeb = Platform.OS === 'web';
 
   const fetchData = async () => {
     try {
@@ -75,13 +76,45 @@ export const EmployerDashboard = () => {
     fetchData();
   };
 
+  const handleDelete = async (posting: any) => {
+    try {
+      setDeletingId(posting._id);
+      const res = await apiClient.delete(`/internships/${posting._id}`);
+      if (res.data?.success) {
+        setPostings((current) => current.filter((item) => item._id !== posting._id));
+        setStats((current) => ({
+          ...current,
+          internships: Math.max(0, current.internships - 1),
+          applicants: Math.max(0, current.applicants - (posting.applicants?.length || 0)),
+        }));
+        Alert.alert('Deleted', 'Internship removed successfully.');
+      }
+    } catch (error: any) {
+      Alert.alert('Delete failed', error.response?.data?.message || 'Could not delete internship');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const confirmDelete = (posting: any) => {
+    Alert.alert(
+      'Delete internship',
+      `Delete ${posting.positionTitle}? This will close the posting and hide it from applicants.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => handleDelete(posting) },
+      ]
+    );
+  };
+
   return (
     <ScrollView 
       className="flex-1"
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
+      <View style={{ width: '100%', maxWidth: 1120, alignSelf: 'center' }}>
       {/* Header */}
-      <View className="px-6 py-4 flex-row justify-between items-center">
+      <View className="px-6 py-4 md:px-8 md:py-6 flex-row justify-between items-center">
         <View>
           <View className="flex-row items-center">
             <GreetingIcon size={20} color={greeting.color} />
@@ -89,7 +122,7 @@ export const EmployerDashboard = () => {
               {greeting.text}
             </Text>
           </View>
-          <Text className="text-2xl font-black text-gray-900">
+          <Text className="text-2xl md:text-3xl font-black text-gray-900">
             {user?.name?.split(' ')[0] || 'Employer'}
           </Text>
         </View>
@@ -104,39 +137,45 @@ export const EmployerDashboard = () => {
       </View>
 
       {/* Stats Grid */}
-      <View className="px-6 py-4 gap-4">
-        <View className="flex-row gap-4">
-          <StatsCard 
-            title="Postings" 
-            value={stats.internships} 
-            icon={Briefcase} 
-            variant="primary" 
-          />
-          <StatsCard 
-            title="Applicants" 
-            value={stats.applicants} 
-            icon={Users} 
-          />
-        </View>
-        <View className="flex-row gap-4">
-          <StatsCard 
-            title="Matches" 
-            value={stats.skillMatches} 
-            icon={CheckCircle2} 
-          />
-          <StatsCard 
-            title="Interviews" 
-            value={stats.interviews} 
-            icon={Calendar} 
-          />
+      <View className="px-6 py-4 md:px-8">
+        <View className="flex-row flex-wrap justify-between gap-y-4">
+          <View className="w-[48%] md:w-[24%]">
+            <StatsCard 
+              title="Postings" 
+              value={stats.internships} 
+              icon={Briefcase} 
+              variant="primary" 
+            />
+          </View>
+          <View className="w-[48%] md:w-[24%]">
+            <StatsCard 
+              title="Applicants" 
+              value={stats.applicants} 
+              icon={Users} 
+            />
+          </View>
+          <View className="w-[48%] md:w-[24%]">
+            <StatsCard 
+              title="Matches" 
+              value={stats.skillMatches} 
+              icon={CheckCircle2} 
+            />
+          </View>
+          <View className="w-[48%] md:w-[24%]">
+            <StatsCard 
+              title="Interviews" 
+              value={stats.interviews} 
+              icon={Calendar} 
+            />
+          </View>
         </View>
       </View>
 
       {/* Quick Actions */}
-      <View className="px-6 py-4">
+      <View className="px-6 py-4 md:px-8">
         <TouchableOpacity 
           onPress={() => router.push('/employer/post-internship' as any)}
-          className="bg-gray-900 p-5 rounded-3xl flex-row items-center justify-between shadow-lg shadow-gray-200"
+          className="bg-gray-900 p-5 md:p-6 rounded-3xl flex-row items-center justify-between shadow-lg shadow-gray-200"
         >
           <View className="flex-row items-center">
             <View className="w-10 h-10 bg-white/10 rounded-xl items-center justify-center">
@@ -149,25 +188,25 @@ export const EmployerDashboard = () => {
       </View>
 
       {/* Live Postings */}
-      <View className="px-6 py-4">
+      <View className="px-6 py-4 md:px-8">
         <View className="flex-row justify-between items-center mb-6">
           <View className="flex-row items-center">
             <Activity size={18} color="#4F46E5" />
-            <Text className="text-lg font-black text-gray-900 uppercase tracking-tight ml-2">Live Postings</Text>
+            <Text className="text-lg md:text-xl font-black text-gray-900 uppercase tracking-tight ml-2">My Postings</Text>
           </View>
-          <TouchableOpacity>
-            <Text className="text-indigo-600 font-bold text-xs">View All</Text>
+          <TouchableOpacity onPress={() => router.push('/employer/post-internship' as any)}>
+            <Text className="text-indigo-600 font-bold text-xs">Create New</Text>
           </TouchableOpacity>
         </View>
 
         {postings.length > 0 ? (
-          postings.slice(0, 5).map((p: any, idx) => (
+          postings.map((p: any, idx) => (
             <MotiView 
               key={p._id}
               from={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: idx * 100 }}
-              className="bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm mb-4"
+              className="bg-white p-5 md:p-6 rounded-[32px] border border-gray-100 shadow-sm mb-4"
             >
               <View className="flex-row justify-between items-start mb-4">
                 <View className="flex-1">
@@ -183,19 +222,42 @@ export const EmployerDashboard = () => {
                 </Badge>
               </View>
 
-              <View className="flex-row items-center justify-between pt-4 border-t border-gray-50">
+              <Text className="text-gray-500 text-xs leading-5 mb-4" numberOfLines={2}>
+                {p.location || 'No location'} • {p.workEnvironment || 'Remote'} • {p.domain || 'General'}
+              </Text>
+
+              <View className={`pt-4 border-t border-gray-50 ${isWeb ? 'flex-row items-center justify-between' : 'flex-row items-center justify-between flex-wrap gap-2'}`}>
                 <View className="flex-row items-center">
                   <Users size={14} color="#6B7280" />
                   <Text className="text-gray-900 font-black ml-2 text-sm">{p.applicants?.length || 0}</Text>
                   <Text className="text-gray-500 font-medium ml-1 text-xs">Applicants</Text>
                 </View>
-                <TouchableOpacity 
-                  onPress={() => router.push(`/employer/internships/${p._id}/applicants` as any)}
-                  className="flex-row items-center"
-                >
-                  <Text className="text-indigo-600 font-black text-[10px] uppercase tracking-widest">Review</Text>
-                  <ChevronRight size={14} color="#4F46E5" className="ml-1" />
-                </TouchableOpacity>
+
+                <View className={`flex-row items-center ${isWeb ? 'space-x-2' : 'gap-2'}`}>
+                  <TouchableOpacity 
+                    onPress={() => router.push(`/employer/internships/${p._id}/applicants` as any)}
+                    className="px-3 py-2 rounded-xl bg-indigo-50 border border-indigo-100"
+                  >
+                    <Text className="text-indigo-600 font-black text-[10px] uppercase tracking-widest">Review</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => router.push(`/employer/post-internship?id=${p._id}` as any)}
+                    className="px-3 py-2 rounded-xl bg-gray-50 border border-gray-100"
+                  >
+                    <Text className="text-gray-700 font-black text-[10px] uppercase tracking-widest">Edit</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    disabled={deletingId === p._id}
+                    onPress={() => confirmDelete(p)}
+                    className="px-3 py-2 rounded-xl bg-rose-50 border border-rose-100"
+                  >
+                    <Text className="text-rose-600 font-black text-[10px] uppercase tracking-widest">
+                      {deletingId === p._id ? 'Deleting' : 'Delete'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </MotiView>
           ))
@@ -208,6 +270,7 @@ export const EmployerDashboard = () => {
       </View>
 
       <View className="h-20" />
+      </View>
     </ScrollView>
   );
 };

@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import * as SecureStore from 'expo-secure-store';
 import { router } from 'expo-router';
+import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import apiClient from '../api/apiClient';
+import { storage } from '../utils/storage';
 
 export interface User {
     _id: string;
@@ -33,7 +34,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const getRoleDashboard = (role: string): string => {
-    return '/(tabs)/';
+    return '/(tabs)';
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -42,19 +43,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const syncUserToStorage = async (userData: User | null) => {
         if (userData) {
-            await SecureStore.setItemAsync('user', JSON.stringify(userData));
+            await storage.setItem('user', JSON.stringify(userData));
             if (userData.token) {
-                await SecureStore.setItemAsync('token', userData.token);
+                await storage.setItem('token', userData.token);
             }
         } else {
-            await SecureStore.deleteItemAsync('user');
-            await SecureStore.deleteItemAsync('token');
+            await storage.deleteItem('user');
+            await storage.deleteItem('token');
         }
     };
 
     const checkUserLoggedIn = async () => {
         try {
-            const token = await SecureStore.getItemAsync('token');
+            const token = await storage.getItem('token');
             if (!token) {
                 setUser(null);
                 setLoading(false);
@@ -78,10 +79,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const login = async (email: string, password: string): Promise<AuthResponse> => {
         try {
-            const { data } = await apiClient.post<User>('/auth/login', { email, password });
+            const credentials = {
+                email: String(email || '').trim().toLowerCase(),
+                password: String(password || '').trim(),
+            };
+
+            const { data } = await apiClient.post<User>('/auth/login', credentials);
 
             if (data.token) {
-                await SecureStore.setItemAsync('token', data.token);
+                await storage.setItem('token', data.token);
             }
 
             setUser(data);
@@ -99,12 +105,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const { data } = await apiClient.post<User>('/auth/register', userData);
 
             if (data.token) {
-                await SecureStore.setItemAsync('token', data.token);
+                await storage.setItem('token', data.token);
             }
 
             setUser(data);
             await syncUserToStorage(data);
-            router.replace('/(tabs)/');
+            router.replace('/(tabs)');
             return { success: true };
         } catch (error: any) {
             return { success: false, error: error.response?.data?.message || 'Registration failed' };
@@ -112,6 +118,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const logout = async (): Promise<void> => {
+        const redirectToLogin = () => {
+            if (Platform.OS === 'web' && typeof window !== 'undefined') {
+                window.location.replace('/login');
+                return;
+            }
+
+            router.replace('/(auth)/login');
+        };
+
         try {
             await apiClient.post('/auth/logout');
         } catch (error) {
@@ -119,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } finally {
             setUser(null);
             await syncUserToStorage(null);
-            router.replace('/(auth)/login');
+            redirectToLogin();
         }
     };
 

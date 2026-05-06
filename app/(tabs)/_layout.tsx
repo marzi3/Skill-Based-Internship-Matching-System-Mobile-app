@@ -1,8 +1,12 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
-import { LayoutDashboard, Search, User } from 'lucide-react-native';
+import { LayoutDashboard, Search, User, Briefcase } from 'lucide-react-native';
+import { useAuth } from '../../src/context/AuthContext';
 
 export default function TabLayout() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
+
   return (
     <Tabs
       screenOptions={{
@@ -32,6 +36,15 @@ export default function TabLayout() {
         options={{
           title: 'Explore',
           tabBarIcon: ({ color }) => <Search size={24} color={color} />,
+          href: isAdmin ? null : undefined,
+        }}
+      />
+      <Tabs.Screen
+        name="applications"
+        options={{
+          title: 'Applications',
+          tabBarIcon: ({ color }) => <Briefcase size={24} color={color} />,
+          href: isAdmin ? null : undefined,
         }}
       />
       <Tabs.Screen
